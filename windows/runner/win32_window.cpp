@@ -110,7 +110,18 @@ bool Win32Window::Create(const std::wstring& title, const Point& origin,
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWMAXIMIZED);
+  ShowWindow(window_handle_, SW_SHOWMAXIMIZED);
+
+  // The window can already be maximized before Flutter attaches its child
+  // surface. Resize it explicitly on the first show so the framework receives
+  // the correct viewport without requiring a manual minimize/restore cycle.
+  if (child_content_ != nullptr) {
+    const RECT rect = GetClientArea();
+    MoveWindow(child_content_, rect.left, rect.top, rect.right - rect.left,
+               rect.bottom - rect.top, TRUE);
+  }
+  UpdateWindow(window_handle_);
+  return true;
 }
 
 LRESULT CALLBACK Win32Window::WndProc(HWND const window,

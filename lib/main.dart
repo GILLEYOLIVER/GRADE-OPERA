@@ -10,17 +10,8 @@ Future<void> main() async {
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
     await windowManager.setPreventClose(true);
-    const windowOptions = WindowOptions(
-      size: Size(1280, 820),
-      minimumSize: Size(760, 600),
-      center: true,
-      title: 'GRADE OPERA',
-    );
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.maximize();
-      await windowManager.show();
-      await windowManager.focus();
-    });
+    await windowManager.setMinimumSize(const Size(760, 600));
+    await windowManager.setTitle('GRADE OPERA');
   }
   final repository = await LocalProjectRepository.create();
   runApp(GradeOperaApp(repository: repository));
