@@ -35,6 +35,8 @@ interface.
 - histórico dos 100 cálculos mais recentes;
 - relatório PDF A4, escolha do local de salvamento, abertura do arquivo,
   pré-visualização e impressão pela janela moderna do Windows;
+- consumo médio por peça na primeira página do PDF, calculado somente com o
+  tecido utilizado dividido pelo total de peças produzidas em todas as cores;
 - tema claro na inicialização, com alternância entre claro e escuro;
 - navegação por teclado, confirmações antes de excluir e aviso de alterações não
   salvas;

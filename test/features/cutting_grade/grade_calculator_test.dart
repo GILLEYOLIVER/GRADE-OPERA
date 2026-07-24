@@ -47,6 +47,37 @@ void main() {
       expect(result.usedMicrometers, 114710000);
       expect(result.remainingMicrometers, 290000);
     });
+
+    test(
+      'calcula consumo médio somente com tecido usado e peças produzidas',
+      () {
+        final result = CalculationResult(
+          availableMicrometers: 915000000,
+          usedMicrometers: 900000000,
+          overlapMicrometers: 0,
+          blocks: const <BlockAllocation>[],
+          sizes: const <SizeAllocation>[
+            SizeAllocation(
+              sizeName: 'M',
+              quantity: 300,
+              desiredPercentage: 100,
+              achievedPercentage: 100,
+            ),
+            SizeAllocation(
+              sizeName: 'G',
+              quantity: 150,
+              desiredPercentage: 50,
+              achievedPercentage: 50,
+            ),
+          ],
+          calculatedAt: DateTime(2026),
+        );
+
+        expect(result.totalPieces, 450);
+        expect(result.remainingMicrometers, 15000000);
+        expect(result.averageConsumptionPerPieceMicrometers, 2000000);
+      },
+    );
   });
 
   test('mantém os percentuais desejados informados pelo usuário', () {

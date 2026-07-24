@@ -302,6 +302,8 @@ class CalculationResult {
       blocks.fold(0, (total, allocation) => total + allocation.quantity);
   int get totalPieces =>
       sizes.fold(0, (total, allocation) => total + allocation.quantity);
+  int get averageConsumptionPerPieceMicrometers =>
+      totalPieces == 0 ? 0 : (usedMicrometers / totalPieces).round();
   double get utilizationPercentage => availableMicrometers == 0
       ? 0
       : usedMicrometers * 100 / availableMicrometers;

@@ -454,6 +454,18 @@ class PdfReportService {
                       ),
                     ),
                   ),
+                  pw.Expanded(
+                    child: pw.Center(
+                      child: pw.Text(
+                        '${BrazilianNumber.metersFromMicrometers(result.averageConsumptionPerPieceMicrometers)} m/peça',
+                        textAlign: pw.TextAlign.center,
+                        style: const pw.TextStyle(
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
