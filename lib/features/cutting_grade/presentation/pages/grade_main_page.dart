@@ -73,6 +73,12 @@ class _GradeMainPageState extends State<GradeMainPage> with WindowListener {
             unawaited(_newProject()),
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): () =>
             unawaited(_saveProject()),
+        const SingleActivator(
+          LogicalKeyboardKey.keyS,
+          control: true,
+          shift: true,
+        ): () =>
+            unawaited(_saveProjectAs()),
         const SingleActivator(LogicalKeyboardKey.keyO, control: true): () =>
             unawaited(_openProjects()),
         const SingleActivator(LogicalKeyboardKey.keyP, control: true): () =>
@@ -408,6 +414,12 @@ class _GradeMainPageState extends State<GradeMainPage> with WindowListener {
                   onPressed: () => unawaited(_saveProject()),
                 ),
                 _compactAction(
+                  tooltip: 'Salvar como · Ctrl+Shift+S',
+                  key: const Key('salvar-como'),
+                  icon: Icons.save_as_outlined,
+                  onPressed: () => unawaited(_saveProjectAs()),
+                ),
+                _compactAction(
                   tooltip: 'Abrir projeto',
                   icon: Icons.folder_open_outlined,
                   onPressed: () => unawaited(_openProjects()),
@@ -457,6 +469,12 @@ class _GradeMainPageState extends State<GradeMainPage> with WindowListener {
                   onPressed: () => unawaited(_saveProject()),
                   icon: const Icon(Icons.save_outlined),
                   label: const Text('Salvar projeto'),
+                ),
+                OutlinedButton.icon(
+                  key: const Key('salvar-como'),
+                  onPressed: () => unawaited(_saveProjectAs()),
+                  icon: const Icon(Icons.save_as_outlined),
+                  label: const Text('Salvar como'),
                 ),
                 OutlinedButton.icon(
                   onPressed: () => unawaited(_openProjects()),
@@ -562,6 +580,99 @@ class _GradeMainPageState extends State<GradeMainPage> with WindowListener {
     await _runGuarded(() async {
       await controller.saveProject();
       _showMessage('Projeto salvo com segurança na pasta de dados do usuário.');
+    });
+  }
+
+  Future<void> _saveProjectAs() async {
+    var newModelCode = controller.modelCodeController.text;
+    var newModelDescription = controller.descriptionController.text;
+    final dialogFormKey = GlobalKey<FormState>();
+
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Salvar projeto como'),
+            content: SizedBox(
+              width: 520,
+              child: Form(
+                key: dialogFormKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    TextFormField(
+                      key: const Key('salvar-como-codigo'),
+                      initialValue: newModelCode,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Novo código do modelo',
+                        prefixIcon: Icon(Icons.tag_outlined),
+                      ),
+                      textInputAction: TextInputAction.next,
+                      onChanged: (value) => newModelCode = value,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      key: const Key('salvar-como-descricao'),
+                      initialValue: newModelDescription,
+                      decoration: const InputDecoration(
+                        labelText: 'Nova descrição do modelo',
+                        prefixIcon: Icon(Icons.description_outlined),
+                      ),
+                      onChanged: (value) => newModelDescription = value,
+                      validator: (value) {
+                        if (newModelCode.trim().isEmpty &&
+                            (value ?? '').trim().isEmpty) {
+                          return 'Informe o código ou a descrição.';
+                        }
+                        return null;
+                      },
+                      onFieldSubmitted: (_) {
+                        if (dialogFormKey.currentState?.validate() ?? false) {
+                          Navigator.pop(dialogContext, true);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'O projeto atual será preservado e uma nova cópia será criada.',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton.icon(
+                key: const Key('confirmar-salvar-como'),
+                onPressed: () {
+                  if (dialogFormKey.currentState?.validate() ?? false) {
+                    Navigator.pop(dialogContext, true);
+                  }
+                },
+                icon: const Icon(Icons.save_as_outlined),
+                label: const Text('Salvar cópia'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    await _runGuarded(() async {
+      await controller.saveProjectAs(
+        modelCode: newModelCode,
+        modelDescription: newModelDescription,
+      );
+      _showMessage('Nova cópia salva. O projeto original foi preservado.');
     });
   }
 

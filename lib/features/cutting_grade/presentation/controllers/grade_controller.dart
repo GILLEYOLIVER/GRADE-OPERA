@@ -450,6 +450,40 @@ class GradeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> saveProjectAs({
+    required String modelCode,
+    required String modelDescription,
+  }) async {
+    final newModelCode = modelCode.trim();
+    final newModelDescription = modelDescription.trim();
+    if (newModelCode.isEmpty && newModelDescription.isEmpty) {
+      throw const UserVisibleException(
+        'Informe o código ou a descrição do novo modelo.',
+      );
+    }
+
+    final now = DateTime.now();
+    final newProjectId = IdGenerator.create('projeto');
+    await repository.saveProject(
+      toDocument(
+        id: newProjectId,
+        createdAt: now,
+        updatedAt: now,
+        modelCodeOverride: newModelCode,
+        modelDescriptionOverride: newModelDescription,
+      ),
+    );
+
+    _withoutDirty(() {
+      modelCodeController.text = newModelCode;
+      descriptionController.text = newModelDescription;
+      _projectId = newProjectId;
+      _createdAt = now;
+      isDirty = false;
+    });
+    notifyListeners();
+  }
+
   Future<List<ProjectDocument>> listProjects() => repository.listProjects();
 
   Future<List<ProjectDocument>> listHistory() => repository.listHistory();
@@ -595,6 +629,8 @@ class GradeController extends ChangeNotifier {
     DateTime? createdAt,
     DateTime? updatedAt,
     CalculationResult? resultOverride,
+    String? modelCodeOverride,
+    String? modelDescriptionOverride,
   }) {
     final now = DateTime.now();
     final totalFabric = fabricColors.fold<int>(0, (sum, fabric) {
@@ -603,8 +639,10 @@ class GradeController extends ChangeNotifier {
       );
       return sum + (value ?? 0);
     });
-    final modelCode = modelCodeController.text.trim();
-    final modelDescription = descriptionController.text.trim();
+    final modelCode =
+        modelCodeOverride?.trim() ?? modelCodeController.text.trim();
+    final modelDescription =
+        modelDescriptionOverride?.trim() ?? descriptionController.text.trim();
     return ProjectDocument(
       id: id,
       orderName: modelCode.isNotEmpty

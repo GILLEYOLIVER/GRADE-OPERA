@@ -1,5 +1,5 @@
 #define MyAppName "GRADE OPERA"
-#define MyAppVersion "1.1.4"
+#define MyAppVersion "1.1.5"
 #define MyAppPublisher "Opera Fashion"
 #define MyAppExeName "grade_opera.exe"
 #define MyAppSourceDir "..\..\build\windows\x64\runner\Release"

@@ -64,6 +64,51 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('salvar como preserva o projeto original e cria uma nova cópia', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = InMemoryProjectRepository();
+    final controller = GradeController(repository: repository);
+    addTearDown(controller.dispose);
+    controller.modelCodeController.text = 'MODELO-ORIGINAL';
+    controller.descriptionController.text = 'Descrição original';
+    await controller.saveProject();
+    final originalId = controller.projectId;
+
+    await tester.pumpWidget(
+      MaterialApp(home: GradeMainPage(controller: controller)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('salvar-como')));
+    await tester.pumpAndSettle();
+    expect(find.text('Salvar projeto como'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('salvar-como-codigo')),
+      'MODELO-COPIA',
+    );
+    await tester.enterText(
+      find.byKey(const Key('salvar-como-descricao')),
+      'Descrição da cópia',
+    );
+    await tester.tap(find.byKey(const Key('confirmar-salvar-como')));
+    await tester.pumpAndSettle();
+
+    expect(repository.projects, hasLength(2));
+    expect(repository.projects.last.id, originalId);
+    expect(repository.projects.last.modelCode, 'MODELO-ORIGINAL');
+    expect(repository.projects.first.id, isNot(originalId));
+    expect(repository.projects.first.modelCode, 'MODELO-COPIA');
+    expect(repository.projects.first.modelDescription, 'Descrição da cópia');
+    expect(controller.projectId, repository.projects.first.id);
+    expect(controller.isDirty, isFalse);
+    expect(find.textContaining('O projeto original foi preservado'), findsOne);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('adiciona uma nova cor com metragem independente', (
     tester,
   ) async {
