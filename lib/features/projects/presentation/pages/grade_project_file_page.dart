@@ -31,7 +31,6 @@ class _GradeProjectFilePageState extends State<GradeProjectFilePage> {
 
   Rect? _openButtonRect;
   Size? _lastLayoutSize;
-  Timer? _buttonLocatorTimer;
   bool _locationScheduled = false;
 
   @override
@@ -39,10 +38,6 @@ class _GradeProjectFilePageState extends State<GradeProjectFilePage> {
     super.initState();
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     widget.controller.addListener(_scheduleOpenButtonLocation);
-    _buttonLocatorTimer = Timer.periodic(
-      const Duration(milliseconds: 750),
-      (_) => _scheduleOpenButtonLocation(),
-    );
     _scheduleOpenButtonLocation();
   }
 
@@ -50,7 +45,6 @@ class _GradeProjectFilePageState extends State<GradeProjectFilePage> {
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     widget.controller.removeListener(_scheduleOpenButtonLocation);
-    _buttonLocatorTimer?.cancel();
     super.dispose();
   }
 
