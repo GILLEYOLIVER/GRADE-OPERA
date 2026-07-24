@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "GRADE OPERA: executar no Windows",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\run_windows.ps1"
+      ],
+      "group": "build",
+      "problemMatcher": "$dart-build"
+    },
+    {
+      "label": "GRADE OPERA: analisar e testar",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\test.ps1"
+      ],
+      "group": "test",
+      "problemMatcher": "$dart-build"
+    },
+    {
+      "label": "GRADE OPERA: gerar versão Windows",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\build_windows.ps1"
+      ],
+      "group": "build",
+      "problemMatcher": "$dart-build"
+    },
+    {
+      "label": "GRADE OPERA: verificar ambiente",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\check_environment.ps1"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

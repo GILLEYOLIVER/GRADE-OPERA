@@ -1,0 +1,43 @@
+#include "resource.h"
+#include <windows.h>
+
+LANGUAGE LANG_PORTUGUESE, SUBLANG_PORTUGUESE_BRAZILIAN
+
+#define APSTUDIO_READONLY_SYMBOLS
+#include "winres.h"
+#undef APSTUDIO_READONLY_SYMBOLS
+
+IDI_APP_ICON ICON "resources\\app_icon.ico"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+ FILEFLAGS VS_FF_DEBUG
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS VOS__WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041604b0"
+        BEGIN
+            VALUE "CompanyName", "GRADE OPERA" "\0"
+            VALUE "FileDescription", "Cálculo inteligente de grade e consumo de tecido" "\0"
+            VALUE "FileVersion", FLUTTER_VERSION "\0"
+            VALUE "InternalName", "grade_opera" "\0"
+            VALUE "LegalCopyright", "Todos os direitos reservados." "\0"
+            VALUE "OriginalFilename", "grade_opera.exe" "\0"
+            VALUE "ProductName", "GRADE OPERA" "\0"
+            VALUE "ProductVersion", FLUTTER_VERSION "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x416, 1200
+    END
+END

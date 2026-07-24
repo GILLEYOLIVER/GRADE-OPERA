@@ -1,0 +1,42 @@
+# Flutter e Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+tmp/
+
+# Plataformas geradas
+android/.gradle/
+android/local.properties
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Editores e sistema
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Saídas locais e dados do usuário
+*.pdf
+*.gradeopera.json
+grade_opera_data/
+projects.json
+*.tmp
+*.bak
+
+# Segredos e configurações pessoais
+.env
+.env.*
+!.env.example
+*.key
+*.pem
