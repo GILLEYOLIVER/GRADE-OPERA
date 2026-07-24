@@ -94,7 +94,7 @@ bool Win32Window::Create(const std::wstring& title, const Point& origin,
   double scale_factor = dpi / 96.0;
 
   HWND window = CreateWindow(
-      window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
+      window_class, title.c_str(), WS_OVERLAPPEDWINDOW | WS_MAXIMIZE,
       Scale(static_cast<int>(origin.x), scale_factor),
       Scale(static_cast<int>(origin.y), scale_factor),
       Scale(static_cast<int>(size.width), scale_factor),

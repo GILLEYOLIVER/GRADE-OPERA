@@ -17,8 +17,8 @@ Future<void> main() async {
       title: 'GRADE OPERA',
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
       await windowManager.maximize();
+      await windowManager.show();
       await windowManager.focus();
     });
   }
