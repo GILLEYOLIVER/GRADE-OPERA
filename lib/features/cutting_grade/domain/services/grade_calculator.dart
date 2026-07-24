@@ -9,6 +9,7 @@ class GradeCalculator {
 
   final GradeValidator validator;
   static const double _epsilon = 0.0000001;
+  static const double _maximumAllowedPercentageDifference = 5;
 
   CalculationResult? calculate(CalculationInput input) {
     final issues = validator.validate(input);
@@ -136,6 +137,30 @@ class GradeCalculator {
       return null;
     }
 
+    final normalizedTolerance = min(
+      100.0,
+      _maximumAllowedPercentageDifference * 100 / maxDesired,
+    );
+    final utilizationCandidate = _findHighestUtilizationCandidate(
+      availableMicrometers,
+      blockData,
+      normalized,
+      normalizedTolerance,
+      maximumReference,
+    );
+    if (utilizationCandidate != null) {
+      final completed = _completeCandidateUtilization(
+        utilizationCandidate,
+        availableMicrometers,
+        blockData,
+        normalized,
+      );
+      return _SingleCalculation(
+        quantities: List<int>.of(completed.quantities),
+        used: completed.used,
+      );
+    }
+
     final initialCandidate = _findInitialCandidate(
       availableMicrometers,
       blockData,
@@ -232,6 +257,12 @@ class GradeCalculator {
       search(0, <int>[], 0, 0, 0, 0, false);
     }
 
+    best = _completeCandidateUtilization(
+      best,
+      availableMicrometers,
+      blockData,
+      normalized,
+    );
     final maximumQuantity = best.quantities.reduce(max);
     if (maximumQuantity <= 0 || best.used > availableMicrometers) {
       return null;
@@ -265,6 +296,162 @@ class GradeCalculator {
       );
     }
     return allocations;
+  }
+
+  _Candidate? _findHighestUtilizationCandidate(
+    int available,
+    List<_BlockData> blocks,
+    List<double> normalized,
+    double normalizedTolerance,
+    int maximumReference,
+  ) {
+    _Candidate? best;
+
+    for (var reference = 1; reference <= maximumReference; reference++) {
+      final ranges = <List<int>>[];
+      var minimumUsed = 0;
+      var possible = true;
+
+      for (var index = 0; index < blocks.length; index++) {
+        final ratio = normalized[index];
+        final lower = max(
+          0,
+          ((ratio - normalizedTolerance) * reference / 100 - _epsilon).ceil(),
+        );
+        final upper = min(
+          reference,
+          ((ratio + normalizedTolerance) * reference / 100 + _epsilon).floor(),
+        );
+        if (lower > upper) {
+          possible = false;
+          break;
+        }
+        minimumUsed += lower * blocks[index].effectiveLength;
+        ranges.add(
+          List<int>.generate(upper - lower + 1, (offset) => upper - offset),
+        );
+      }
+
+      if (!possible) {
+        continue;
+      }
+      if (minimumUsed > available) {
+        break;
+      }
+
+      final suffixMinimumUsed = List<int>.filled(blocks.length + 1, 0);
+      final suffixMaximumUsed = List<int>.filled(blocks.length + 1, 0);
+      for (var index = blocks.length - 1; index >= 0; index--) {
+        suffixMinimumUsed[index] =
+            suffixMinimumUsed[index + 1] +
+            ranges[index].last * blocks[index].effectiveLength;
+        suffixMaximumUsed[index] =
+            suffixMaximumUsed[index + 1] +
+            ranges[index].first * blocks[index].effectiveLength;
+      }
+
+      void search(
+        int index,
+        List<int> quantities,
+        int used,
+        double partialMaxError,
+        double partialSumError,
+        int totalSheets,
+        bool hasReference,
+      ) {
+        if (used > available || used + suffixMinimumUsed[index] > available) {
+          return;
+        }
+        if (best != null && used + suffixMaximumUsed[index] < best!.used) {
+          return;
+        }
+        if (index == blocks.length) {
+          if (!hasReference || totalSheets == 0) {
+            return;
+          }
+          final candidate = _Candidate(
+            quantities: List<int>.of(quantities),
+            used: used,
+            maxError: partialMaxError,
+            sumError: partialSumError,
+            totalSheets: totalSheets,
+          );
+          if (best == null || candidate.isBetterForUtilizationThan(best!)) {
+            best = candidate;
+          }
+          return;
+        }
+
+        for (final quantity in ranges[index]) {
+          final error = (quantity * 100 / reference - normalized[index]).abs();
+          quantities.add(quantity);
+          search(
+            index + 1,
+            quantities,
+            used + quantity * blocks[index].effectiveLength,
+            max(partialMaxError, error),
+            partialSumError + error * blocks[index].sizes.length,
+            totalSheets + quantity,
+            hasReference || quantity == reference,
+          );
+          quantities.removeLast();
+        }
+      }
+
+      search(0, <int>[], 0, 0, 0, 0, false);
+    }
+
+    return best;
+  }
+
+  _Candidate _candidateFromQuantities(
+    List<_BlockData> blocks,
+    List<double> normalized,
+    List<int> quantities,
+  ) {
+    final reference = quantities.reduce(max);
+    var maximumError = 0.0;
+    var errorSum = 0.0;
+    for (var index = 0; index < quantities.length; index++) {
+      final error = (quantities[index] * 100 / reference - normalized[index])
+          .abs();
+      maximumError = max(maximumError, error);
+      errorSum += error * blocks[index].sizes.length;
+    }
+    return _Candidate(
+      quantities: List<int>.of(quantities),
+      used: _consumption(blocks, quantities),
+      maxError: maximumError,
+      sumError: errorSum,
+      totalSheets: quantities.fold(0, (sum, quantity) => sum + quantity),
+    );
+  }
+
+  _Candidate _completeCandidateUtilization(
+    _Candidate candidate,
+    int available,
+    List<_BlockData> blocks,
+    List<double> normalized,
+  ) {
+    var best = candidate;
+    while (true) {
+      _Candidate? next;
+      for (var index = 0; index < blocks.length; index++) {
+        if (best.used + blocks[index].effectiveLength > available) {
+          continue;
+        }
+        final quantities = List<int>.of(best.quantities);
+        quantities[index]++;
+        final option = _candidateFromQuantities(blocks, normalized, quantities);
+        if (next == null || option.isBetterThan(next)) {
+          next = option;
+        }
+      }
+      if (next == null) {
+        return best;
+      }
+      best = next;
+    }
   }
 
   _Candidate? _findInitialCandidate(
@@ -379,16 +566,30 @@ class _Candidate {
   final double sumError;
   final int totalSheets;
 
-  bool isBetterThan(_Candidate other) {
+  bool isBetterForUtilizationThan(_Candidate other) {
     const epsilon = 0.0000001;
+    if (used != other.used) {
+      return used > other.used;
+    }
     if ((maxError - other.maxError).abs() > epsilon) {
       return maxError < other.maxError;
     }
     if ((sumError - other.sumError).abs() > epsilon) {
       return sumError < other.sumError;
     }
+    return totalSheets < other.totalSheets;
+  }
+
+  bool isBetterThan(_Candidate other) {
+    const epsilon = 0.0000001;
+    if ((maxError - other.maxError).abs() > epsilon) {
+      return maxError < other.maxError;
+    }
     if (used != other.used) {
       return used > other.used;
+    }
+    if ((sumError - other.sumError).abs() > epsilon) {
+      return sumError < other.sumError;
     }
     return totalSheets < other.totalSheets;
   }

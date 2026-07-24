@@ -19,7 +19,8 @@ interface.
 - uma única margem global em centímetros aplicada a todas as cores e blocos;
 - leitura de números com vírgula ou ponto e apresentação no padrão brasileiro;
 - margem de traspasso aplicada a cada folha de cada bloco;
-- otimização inteira por cor, sem misturar metragens ou ultrapassar o disponível;
+- otimização inteira por cor, priorizando o maior aproveitamento possível sem
+  misturar metragens ou ultrapassar o disponível;
 - preservação dos percentuais informados na exibição, inclusive acima de 100%;
 - comparação entre porcentagem desejada e alcançada;
 - resultado com fios por cor e, logo abaixo, quantidade total agrupada;
@@ -29,7 +30,8 @@ interface.
 - abertura maximizada e identidade visual oficial da Opera Fashion;
 - indicador textual e visual: Exato, Muito próximo, Dentro da tolerância ou
   Fora da tolerância;
-- projetos salvos, editados, duplicados, excluídos e reabertos localmente;
+- projetos salvos, editados, duplicados, excluídos e reabertos localmente,
+  incluindo a opção **Salvar como**;
 - histórico dos 100 cálculos mais recentes;
 - relatório PDF A4, escolha do local de salvamento, abertura do arquivo,
   pré-visualização e impressão pela janela moderna do Windows;
@@ -57,13 +59,20 @@ os valores desejados e alcançados continuam na escala informada pelo usuário,
 inclusive acima de 100%. Cada cor é otimizada separadamente; ao final, o app
 soma as quantidades equivalentes para formar o resultado agrupado. O motor cria
 uma solução inicial e executa uma busca branch-and-bound. Ramos são descartados
-quando excedem a metragem da cor ou já não podem melhorar a solução. A
-comparação é lexicográfica:
+quando excedem a metragem da cor ou já não podem melhorar a solução. Dentro da
+tolerância de cinco pontos percentuais, a comparação é lexicográfica:
 
-1. menor erro percentual máximo;
-2. menor soma dos erros percentuais;
-3. maior uso do tecido e menor sobra;
+1. maior uso do tecido e menor sobra;
+2. menor erro percentual máximo;
+3. menor soma dos erros percentuais;
 4. em empate, menor quantidade total de folhas.
+
+Quando a metragem é pequena demais para existir uma combinação dentro dessa
+tolerância, o motor usa a combinação proporcional mais próxima possível e,
+entre soluções equivalentes, escolhe a que mais aproveita o tecido.
+Depois de formar a grade-base, qualquer sobra que ainda comporte um bloco é
+aproveitada pelo bloco que menos altera as porcentagens. O processo continua
+até o saldo ser menor que o comprimento do menor bloco disponível.
 
 O cálculo pesado roda em um isolate para manter a interface responsiva.
 
