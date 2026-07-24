@@ -1,0 +1,41 @@
+name: Aplicar diretamente a abertura de arquivos
+
+on:
+  push:
+    branches:
+      - fix/abrir-projeto-pelo-explorador
+    paths:
+      - .github/workflows/aplicar-abertura-arquivo-v2.yml
+      - tool/apply_open_project_fix_v2.py
+
+permissions:
+  contents: write
+
+jobs:
+  aplicar:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar a implementação
+        run: python3 tool/apply_open_project_fix_v2.py
+
+      - name: Conferir espaços e conflitos de patch
+        run: git diff --check
+
+      - name: Remover automações temporárias e publicar
+        shell: bash
+        run: |
+          rm -f tool/apply_open_project_fix.py
+          rm -f tool/apply_open_project_fix_v2.py
+          rm -f .github/workflows/aplicar-abertura-arquivo.yml
+          rm -f .github/workflows/aplicar-abertura-arquivo-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Adiciona abertura de projetos pelo explorador de arquivos"
+          git push
