@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:grade_opera/features/cutting_grade/presentation/controllers/grade_controller.dart';
 import 'package:grade_opera/features/cutting_grade/presentation/pages/grade_main_page.dart';
 import 'package:grade_opera/features/projects/services/project_file_importer.dart';
@@ -36,14 +35,12 @@ class _GradeProjectFilePageState extends State<GradeProjectFilePage> {
   @override
   void initState() {
     super.initState();
-    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     widget.controller.addListener(_scheduleOpenButtonLocation);
     _scheduleOpenButtonLocation();
   }
 
   @override
   void dispose() {
-    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     widget.controller.removeListener(_scheduleOpenButtonLocation);
     super.dispose();
   }
@@ -76,7 +73,7 @@ class _GradeProjectFilePageState extends State<GradeProjectFilePage> {
                   button: true,
                   label: 'Abrir arquivo',
                   child: Tooltip(
-                    message: 'Abrir arquivo · Ctrl+O',
+                    message: 'Abrir arquivo',
                     child: MouseRegion(
                       cursor: SystemMouseCursors.click,
                       child: GestureDetector(
@@ -93,26 +90,6 @@ class _GradeProjectFilePageState extends State<GradeProjectFilePage> {
       );
     },
   );
-
-  bool _handleKeyEvent(KeyEvent event) {
-    if (event is! KeyDownEvent ||
-        event.logicalKey != LogicalKeyboardKey.keyO) {
-      return false;
-    }
-
-    final pressedKeys = HardwareKeyboard.instance.logicalKeysPressed;
-    final modifierPressed =
-        pressedKeys.contains(LogicalKeyboardKey.controlLeft) ||
-        pressedKeys.contains(LogicalKeyboardKey.controlRight) ||
-        pressedKeys.contains(LogicalKeyboardKey.metaLeft) ||
-        pressedKeys.contains(LogicalKeyboardKey.metaRight);
-    if (!modifierPressed) {
-      return false;
-    }
-
-    unawaited(_openProjectFile());
-    return true;
-  }
 
   void _scheduleOpenButtonLocation() {
     if (_locationScheduled) {
