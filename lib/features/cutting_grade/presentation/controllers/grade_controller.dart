@@ -8,6 +8,7 @@ import 'package:grade_opera/features/cutting_grade/domain/services/grade_calcula
 import 'package:grade_opera/features/cutting_grade/domain/services/grade_validator.dart';
 import 'package:grade_opera/features/projects/domain/entities/project_document.dart';
 import 'package:grade_opera/features/projects/domain/repositories/project_repository.dart';
+import 'package:grade_opera/features/projects/services/project_file_exporter.dart';
 
 class UserVisibleException implements Exception {
   const UserVisibleException(this.message);
@@ -84,6 +85,7 @@ class EditableFabricColor {
 class GradeController extends ChangeNotifier {
   GradeController({
     required this.repository,
+    this.projectFileExporter = const LocalProjectFileExporter(),
     bool startWithStandardGrade = true,
   }) {
     for (final controller in _mainControllers) {
@@ -102,6 +104,7 @@ class GradeController extends ChangeNotifier {
   }
 
   final ProjectRepository repository;
+  final ProjectFileExporter projectFileExporter;
   final TextEditingController modelCodeController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController desiredQuantityController =
@@ -450,9 +453,10 @@ class GradeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveProjectAs({
+  Future<String> saveProjectAs({
     required String modelCode,
     required String modelDescription,
+    required String directoryPath,
   }) async {
     final newModelCode = modelCode.trim();
     final newModelDescription = modelDescription.trim();
@@ -464,15 +468,18 @@ class GradeController extends ChangeNotifier {
 
     final now = DateTime.now();
     final newProjectId = IdGenerator.create('projeto');
-    await repository.saveProject(
-      toDocument(
-        id: newProjectId,
-        createdAt: now,
-        updatedAt: now,
-        modelCodeOverride: newModelCode,
-        modelDescriptionOverride: newModelDescription,
-      ),
+    final newProject = toDocument(
+      id: newProjectId,
+      createdAt: now,
+      updatedAt: now,
+      modelCodeOverride: newModelCode,
+      modelDescriptionOverride: newModelDescription,
     );
+    final exportedPath = await projectFileExporter.exportProject(
+      newProject,
+      directoryPath: directoryPath,
+    );
+    await repository.saveProject(newProject);
 
     _withoutDirty(() {
       modelCodeController.text = newModelCode;
@@ -482,6 +489,7 @@ class GradeController extends ChangeNotifier {
       isDirty = false;
     });
     notifyListeners();
+    return exportedPath;
   }
 
   Future<List<ProjectDocument>> listProjects() => repository.listProjects();

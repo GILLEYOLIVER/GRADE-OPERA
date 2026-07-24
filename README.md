@@ -32,6 +32,8 @@ interface.
   Fora da tolerância;
 - projetos salvos, editados, duplicados, excluídos e reabertos localmente,
   incluindo a opção **Salvar como**;
+- seleção da pasta de destino no **Salvar como**, com uma cópia individual
+  `.gradeopera.json` e nomes incrementais para não sobrescrever arquivos;
 - histórico dos 100 cálculos mais recentes;
 - relatório PDF A4, escolha do local de salvamento, abertura do arquivo,
   pré-visualização e impressão pela janela moderna do Windows;

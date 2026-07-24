@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:grade_opera/core/constants/app_constants.dart';
@@ -14,9 +15,14 @@ import 'package:printing/printing.dart';
 import 'package:window_manager/window_manager.dart';
 
 class GradeMainPage extends StatefulWidget {
-  const GradeMainPage({required this.controller, super.key});
+  const GradeMainPage({
+    required this.controller,
+    this.selectProjectDirectory,
+    super.key,
+  });
 
   final GradeController controller;
+  final Future<String?> Function()? selectProjectDirectory;
 
   @override
   State<GradeMainPage> createState() => _GradeMainPageState();
@@ -586,93 +592,164 @@ class _GradeMainPageState extends State<GradeMainPage> with WindowListener {
   Future<void> _saveProjectAs() async {
     var newModelCode = controller.modelCodeController.text;
     var newModelDescription = controller.descriptionController.text;
+    String? selectedDirectory;
+    String? directoryError;
     final dialogFormKey = GlobalKey<FormState>();
 
-    final confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Salvar projeto como'),
-            content: SizedBox(
-              width: 520,
-              child: Form(
-                key: dialogFormKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    TextFormField(
-                      key: const Key('salvar-como-codigo'),
-                      initialValue: newModelCode,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Novo código do modelo',
-                        prefixIcon: Icon(Icons.tag_outlined),
-                      ),
-                      textInputAction: TextInputAction.next,
-                      onChanged: (value) => newModelCode = value,
+    final request = await showDialog<_SaveProjectAsRequest>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Salvar projeto como'),
+          content: SizedBox(
+            width: 560,
+            child: Form(
+              key: dialogFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  TextFormField(
+                    key: const Key('salvar-como-codigo'),
+                    initialValue: newModelCode,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Novo código do modelo',
+                      prefixIcon: Icon(Icons.tag_outlined),
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      key: const Key('salvar-como-descricao'),
-                      initialValue: newModelDescription,
-                      decoration: const InputDecoration(
-                        labelText: 'Nova descrição do modelo',
-                        prefixIcon: Icon(Icons.description_outlined),
-                      ),
-                      onChanged: (value) => newModelDescription = value,
-                      validator: (value) {
-                        if (newModelCode.trim().isEmpty &&
-                            (value ?? '').trim().isEmpty) {
-                          return 'Informe o código ou a descrição.';
-                        }
-                        return null;
-                      },
-                      onFieldSubmitted: (_) {
-                        if (dialogFormKey.currentState?.validate() ?? false) {
-                          Navigator.pop(dialogContext, true);
-                        }
-                      },
+                    textInputAction: TextInputAction.next,
+                    onChanged: (value) => newModelCode = value,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    key: const Key('salvar-como-descricao'),
+                    initialValue: newModelDescription,
+                    decoration: const InputDecoration(
+                      labelText: 'Nova descrição do modelo',
+                      prefixIcon: Icon(Icons.description_outlined),
                     ),
-                    const SizedBox(height: 12),
-                    const Align(
+                    onChanged: (value) => newModelDescription = value,
+                    validator: (value) {
+                      if (newModelCode.trim().isEmpty &&
+                          (value ?? '').trim().isEmpty) {
+                        return 'Informe o código ou a descrição.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      OutlinedButton.icon(
+                        key: const Key('escolher-pasta-salvar-como'),
+                        onPressed: () async {
+                          final directory =
+                              await (widget.selectProjectDirectory?.call() ??
+                                  FilePicker.platform.getDirectoryPath(
+                                    dialogTitle:
+                                        'Escolha a pasta para salvar o projeto',
+                                  ));
+                          if (directory != null &&
+                              directory.trim().isNotEmpty &&
+                              dialogContext.mounted) {
+                            setDialogState(() {
+                              selectedDirectory = directory;
+                              directoryError = null;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.folder_open_outlined),
+                        label: const Text('Escolher pasta'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Tooltip(
+                            message: selectedDirectory ?? '',
+                            child: Text(
+                              selectedDirectory ?? 'Nenhuma pasta selecionada',
+                              key: const Key('pasta-salvar-como'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (directoryError != null)
+                    Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        'O projeto atual será preservado e uma nova cópia será criada.',
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          directoryError!,
+                          style: TextStyle(
+                            color: Theme.of(dialogContext).colorScheme.error,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                  const SizedBox(height: 12),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'O projeto atual será preservado e uma nova cópia será criada na pasta escolhida.',
+                    ),
+                  ),
+                ],
               ),
             ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton.icon(
-                key: const Key('confirmar-salvar-como'),
-                onPressed: () {
-                  if (dialogFormKey.currentState?.validate() ?? false) {
-                    Navigator.pop(dialogContext, true);
-                  }
-                },
-                icon: const Icon(Icons.save_as_outlined),
-                label: const Text('Salvar cópia'),
-              ),
-            ],
           ),
-        ) ??
-        false;
-    if (!confirmed || !mounted) {
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              key: const Key('confirmar-salvar-como'),
+              onPressed: () {
+                final formIsValid =
+                    dialogFormKey.currentState?.validate() ?? false;
+                if (selectedDirectory == null) {
+                  setDialogState(
+                    () => directoryError =
+                        'Escolha a pasta onde a cópia será salva.',
+                  );
+                }
+                if (formIsValid && selectedDirectory != null) {
+                  Navigator.pop(
+                    dialogContext,
+                    _SaveProjectAsRequest(
+                      modelCode: newModelCode,
+                      modelDescription: newModelDescription,
+                      directoryPath: selectedDirectory!,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.save_as_outlined),
+              label: const Text('Salvar cópia'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (request == null || !mounted) {
       return;
     }
 
     await _runGuarded(() async {
-      await controller.saveProjectAs(
-        modelCode: newModelCode,
-        modelDescription: newModelDescription,
+      final savedPath = await controller.saveProjectAs(
+        modelCode: request.modelCode,
+        modelDescription: request.modelDescription,
+        directoryPath: request.directoryPath,
       );
-      _showMessage('Nova cópia salva. O projeto original foi preservado.');
+      _showMessage(
+        'Nova cópia salva em "$savedPath". O projeto original foi preservado.',
+      );
     });
   }
 
@@ -1096,4 +1173,16 @@ class _GradeMainPageState extends State<GradeMainPage> with WindowListener {
     return '${two(value.day)}/${two(value.month)}/${value.year} '
         '${two(value.hour)}:${two(value.minute)}';
   }
+}
+
+class _SaveProjectAsRequest {
+  const _SaveProjectAsRequest({
+    required this.modelCode,
+    required this.modelDescription,
+    required this.directoryPath,
+  });
+
+  final String modelCode;
+  final String modelDescription;
+  final String directoryPath;
 }

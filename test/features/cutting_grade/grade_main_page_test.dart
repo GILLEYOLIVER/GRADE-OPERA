@@ -5,6 +5,8 @@ import 'package:grade_opera/features/cutting_grade/domain/entities/grade_entitie
 import 'package:grade_opera/features/cutting_grade/presentation/controllers/grade_controller.dart';
 import 'package:grade_opera/features/cutting_grade/presentation/pages/grade_main_page.dart';
 import 'package:grade_opera/features/cutting_grade/presentation/widgets/results_panel.dart';
+import 'package:grade_opera/features/projects/domain/entities/project_document.dart';
+import 'package:grade_opera/features/projects/services/project_file_exporter.dart';
 
 import '../../support/in_memory_project_repository.dart';
 
@@ -70,7 +72,11 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1400, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final repository = InMemoryProjectRepository();
-    final controller = GradeController(repository: repository);
+    final fileExporter = _InMemoryProjectFileExporter();
+    final controller = GradeController(
+      repository: repository,
+      projectFileExporter: fileExporter,
+    );
     addTearDown(controller.dispose);
     controller.modelCodeController.text = 'MODELO-ORIGINAL';
     controller.descriptionController.text = 'Descrição original';
@@ -78,7 +84,12 @@ void main() {
     final originalId = controller.projectId;
 
     await tester.pumpWidget(
-      MaterialApp(home: GradeMainPage(controller: controller)),
+      MaterialApp(
+        home: GradeMainPage(
+          controller: controller,
+          selectProjectDirectory: () async => r'C:\Projetos de corte',
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -94,6 +105,10 @@ void main() {
       find.byKey(const Key('salvar-como-descricao')),
       'Descrição da cópia',
     );
+    expect(find.text('Nenhuma pasta selecionada'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('escolher-pasta-salvar-como')));
+    await tester.pumpAndSettle();
+    expect(find.text(r'C:\Projetos de corte'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirmar-salvar-como')));
     await tester.pumpAndSettle();
 
@@ -103,10 +118,40 @@ void main() {
     expect(repository.projects.first.id, isNot(originalId));
     expect(repository.projects.first.modelCode, 'MODELO-COPIA');
     expect(repository.projects.first.modelDescription, 'Descrição da cópia');
+    expect(fileExporter.directoryPath, r'C:\Projetos de corte');
+    expect(fileExporter.project, same(repository.projects.first));
     expect(controller.projectId, repository.projects.first.id);
     expect(controller.isDirty, isFalse);
     expect(find.textContaining('O projeto original foi preservado'), findsOne);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('salvar como exige a escolha da pasta', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = InMemoryProjectRepository();
+    final controller = GradeController(
+      repository: repository,
+      projectFileExporter: _InMemoryProjectFileExporter(),
+    );
+    addTearDown(controller.dispose);
+    controller.modelCodeController.text = 'MODELO-PASTA';
+
+    await tester.pumpWidget(
+      MaterialApp(home: GradeMainPage(controller: controller)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('salvar-como')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirmar-salvar-como')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Escolha a pasta onde a cópia será salva.'),
+      findsOneWidget,
+    );
+    expect(repository.projects, isEmpty);
+    expect(find.text('Salvar projeto como'), findsOneWidget);
   });
 
   testWidgets('adiciona uma nova cor com metragem independente', (
@@ -473,4 +518,20 @@ void main() {
     expect(find.byKey(const Key('campo-ordem')), findsNothing);
     expect(find.text('Informe um número válido.'), findsNWidgets(3));
   });
+}
+
+class _InMemoryProjectFileExporter implements ProjectFileExporter {
+  ProjectDocument? project;
+  String? directoryPath;
+
+  @override
+  Future<String> exportProject(
+    ProjectDocument project, {
+    required String directoryPath,
+  }) async {
+    this.project = project;
+    this.directoryPath = directoryPath;
+    return '$directoryPath${String.fromCharCode(92)}'
+        'GRADE_OPERA_${project.modelCode}.gradeopera.json';
+  }
 }
