@@ -65,9 +65,7 @@ class LocalProjectFileImporter implements ProjectFileImporter {
         );
       }
 
-      return ProjectDocument.fromJson(
-        Map<String, Object?>.from(projectJson),
-      );
+      return ProjectDocument.fromJson(Map<String, Object?>.from(projectJson));
     } on ProjectFileImportException {
       rethrow;
     } on FileSystemException {

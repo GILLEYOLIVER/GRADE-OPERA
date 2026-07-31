@@ -10,9 +10,7 @@ void main() {
     const importer = LocalProjectFileImporter();
 
     setUp(() async {
-      directory = await Directory.systemTemp.createTemp(
-        'grade_opera_import_',
-      );
+      directory = await Directory.systemTemp.createTemp('grade_opera_import_');
     });
 
     tearDown(() async {
@@ -203,11 +201,7 @@ Map<String, Object?> _validEnvelope() => <String, Object?>{
       },
     ],
     'blocks': <Object?>[
-      <String, Object?>{
-        'id': 'bloco-1',
-        'name': 'M',
-        'lengthText': '5,20',
-      },
+      <String, Object?>{'id': 'bloco-1', 'name': 'M', 'lengthText': '5,20'},
     ],
     'fabricColors': <Object?>[
       <String, Object?>{
