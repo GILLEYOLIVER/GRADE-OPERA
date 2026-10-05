@@ -1,0 +1,58 @@
+name: Aplicar abertura de projetos pelo explorador
+
+on:
+  push:
+    branches:
+      - fix/abrir-projeto-pelo-explorador
+    paths:
+      - .github/workflows/aplicar-abertura-arquivo.yml
+      - tool/apply_open_project_fix.py
+
+permissions:
+  contents: write
+
+jobs:
+  aplicar-e-validar:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Aplicar as alterações
+        run: python3 tool/apply_open_project_fix.py
+
+      - name: Formatar o código
+        run: dart format lib test
+
+      - name: Restaurar dependências
+        run: flutter pub get
+
+      - name: Analisar o projeto
+        run: flutter analyze
+
+      - name: Executar os testes
+        run: flutter test
+
+      - name: Remover arquivos temporários e publicar a correção
+        shell: bash
+        run: |
+          rm -f tool/apply_open_project_fix.py
+          rm -f .github/workflows/aplicar-abertura-arquivo.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração para publicar."
+            exit 0
+          fi
+          git commit -m "Adiciona abertura de projetos pelo explorador de arquivos"
+          git push
